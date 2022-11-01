@@ -34,6 +34,7 @@ public class OperationsJDBC {
     }
 
     /**
+     * <h2> CREATE </h2>
      * Método para crear la base de datos en el caso de que no existe en base al nombre indicado por parámetro.
      *
      * @param databaseName Nombre de la base de datos que se quiere crear.
@@ -46,15 +47,26 @@ public class OperationsJDBC {
         sentencia.execute(sql);
     }
 
-    //CREATE TABLE
+    /**
+     * Método para crear la tabla en el caso de que no existe.
+     *
+     * @param tabla Nombre de la tabla que se quiere crear.
+     * @param campos Se manda un string que contemple los campos, los tipos, el número y si se incluyen keys.
+     *
+     */
     public void createTable(String tabla, String campos) throws SQLException {
         String sql = "CREATE TABLE IF NOT EXISTS " + tabla + " (" + campos + ")";
         sentencia.execute(sql);
 
     }
 
-    // INSERT
-    //INSERT WITH STATEMENT
+    /**
+     *  <h2> INSERT </h2>
+     * Método para Insertar simple en el que solo se ejecuta la sentencia SQL.
+     *
+     * @param sql La sentencia SQL de inserción.
+     *
+     */
     public void insert(String sql) throws SQLException {
         if (sql.toUpperCase().contains("INSERT")) {
             int filasAfectadas = sentencia.executeUpdate(sql);
@@ -64,7 +76,14 @@ public class OperationsJDBC {
         }
     }
 
-    //INSERT WITH PREPARED STATEMENT WITH BATCH
+    /**
+     * Método para Insertar por lotes.
+     *
+     * @param tabla Nombre de la tabla con la que se quiere trabajar
+     * @param campos Array Campos que se quieren insertar datos.
+     * @param datosClientes Array bidimensional con los datos de las filas.
+     *
+     */
     public void insertBatch(String tabla, String[] campos, String[][] datosClientes) throws SQLException {
         if (miConexion.getMetaData().supportsBatchUpdates()) {
             //Completar la sentencia SQL con los campos y las interrogaciones correspondientes.
@@ -94,14 +113,19 @@ public class OperationsJDBC {
             }
             sentenciaPreparada.executeBatch();
             miConexion.commit();
-            selectAll(tabla);
+            selectAllColumns(tabla);
         } else {
             System.out.println("Esta BBDD no soporta insert por lotes");
         }
     }
 
-    //UPDATE
-    //UPDATE WITH STATEMENT
+    /**
+     *  <h2> UPDATE </h2>
+     * Método para Actualizar simple
+     *
+     * @param sql La sentencia SQL que actualiza.
+     *
+     */
     public void update(String sql) throws SQLException {
         if (sql.toUpperCase().contains("UPDATE")) {
             int filasAfectadas = sentencia.executeUpdate(sql);
@@ -111,7 +135,15 @@ public class OperationsJDBC {
         }
     }
 
-    //UPDATE WITH PREPARED STATEMENT
+
+    /**
+     * Método para Actualizar en el que en la sentencia SQL ya vienen las marcas para el PreparedStatement
+     * y se pasa un Array con los datos que corresponden.
+     *
+     * @param sql La sentencia SQL que actualiza.
+     * @param datos Array con los datos que van en orden en los PreparedStatement
+     *
+     */
     public void updatePreparedStatement(String sql, String[] datos) throws SQLException {
         if (sql.toUpperCase().contains("UPDATE")) {
             sentenciaPreparada = miConexion.prepareStatement(sql);
@@ -125,8 +157,13 @@ public class OperationsJDBC {
     }
 
 
-    // DELETE
-    //DELETE WITH STATEMENT
+    /**
+     *  <h2> DELETE </h2>
+     * Método para Eliminar datos de la tabla con un simple SQL dado, que además informa de las filas afectadas
+     *
+     * @param sql La sentencia SQL que elimina datos de la tabla
+     *
+     */
     public void delete(String sql) throws SQLException {
         if (sql.toUpperCase().contains("DELETE")) {
             int filasAfectadas = sentencia.executeUpdate(sql);
@@ -136,7 +173,14 @@ public class OperationsJDBC {
         }
     }
 
-    //DELETE WITH PREPARED STATEMENT
+    /**
+     * Método para Eliminar datos de la tabla con una sentencia SQL ya vienen las marcas para el PreparedStatement
+     * y se pasa un Array con los datos que corresponden.
+     *
+     * @param sql La sentencia SQL que elimina datos de la tabla
+     * @param datos Array con los datos a eliminar
+     *
+     */
     public void deletePreparedStatement(String sql, String[] datos) throws SQLException {
         if (sql.toUpperCase().contains("DELETE")) {
             sentenciaPreparada = miConexion.prepareStatement(sql);
@@ -149,11 +193,17 @@ public class OperationsJDBC {
         }
     }
 
-    //SELECT
-    //SELECT WITH STATEMENT
 
-    //Método para formatear el resultado de la consulta sin la cabecera
-    private String getStringConsulta(String[] campos, String lineas, ResultSet rs) throws SQLException {
+    /**
+     * <h2> SELECT </h2>
+     * Método para formatear la salida de los metadatos de los campos obtenido s
+     *
+     * @param campos Todos los campos para mostrarlos en forma de cabecera.
+     * @param lineas Se va almacenando cada línea para luego mostrarlas.
+     * @param rs ResultSet cargado con el select realizado.
+     *
+     */
+    private String getStringQuery(String[] campos, String lineas, ResultSet rs) throws SQLException {
         while (rs.next()) {
             for (int i = 0; i < campos.length; i++) {
                 lineas += rs.getString(campos[i]) + " ";
@@ -164,30 +214,61 @@ public class OperationsJDBC {
     }
 
     /**
-     * Método para realizar la consulta de todos los campos
+     * Método para realizar la consulta genérica.
+     *
+     * @param sql Sentencia SQL para realizar la consulta
+     */
+    public void select(String sql) throws SQLException {
+        if (sql.toUpperCase().contains("SELECT")) {
+            String lineas = "", campo = "";
+            ResultSet rs = sentencia.executeQuery(sql);
+            String[] campos = new String[rs.getMetaData().getColumnCount()];
+
+            for (int i = 0; i < campos.length; i++) {
+                campos[i] = rs.getMetaData().getColumnName(i + 1);
+                campo += campos[i] + " ";
+            }
+
+            lineas = getStringQuery(campos, lineas, rs);
+            System.out.println(campos+ "\n" + lineas);
+            rs.close();
+
+        } else {
+            System.out.println("Operación SQL para consulta incorrecta");
+        }
+    }
+
+    /**
+     * Método para realizar la consulta de todos los campos con solo el nombre de la tabla
      *
      * @param tabla Nombre de la tabla en la que se quiere realizar la consulta
      */
-    public void selectAll(String tabla) throws SQLException {
-        String sql = "SELECT * FROM " + tabla, campos = "", lineas = "";
+    public void selectAllColumns(String tabla) throws SQLException {
+        String sql = "SELECT * FROM " + tabla, campo = "", lineas = "";
         ResultSet rs = sentencia.executeQuery(sql);
-        String[] metaData = new String[rs.getMetaData().getColumnCount()];
+        String[] campos = new String[rs.getMetaData().getColumnCount()];
 
-        for (int i = 0; i < metaData.length; i++) {
-            metaData[i] = rs.getMetaData().getColumnName(i + 1);
-            campos += metaData[i] + " ";
+        //Se sacan los campos
+        for (int i = 0; i < campos.length; i++) {
+            campos[i] = rs.getMetaData().getColumnName(i + 1);
+            campo += campos[i] + " ";
         }
 
-        lineas = getStringConsulta(metaData, lineas, rs);
-        System.out.println(campos + "\n" + lineas);
+        lineas = getStringQuery(campos, lineas, rs);
+        System.out.println(campo + "\n" + lineas);
         rs.close();
     }
-
-    //Método para realizar la consulta de unos campos concretos
+    /**
+     * Método para realizar la consulta de una tabla y unos campos específicos
+     *
+     * @param tabla Nombre de la tabla en la que se quiere realizar la consulta.
+     * @param campos Array con los campos que se quieren consultar.
+     */
     public void select(String tabla, String[] campos) throws SQLException {
         //Completar la sentencia SQL con los campos y las interrogaciones correspondientes.
         String campo = "", lineas = "";
 
+        //Se formatea el apartado de los campos para la sentencia SQL
         for (int i = 0; i < campos.length; i++) {
             if (i != campos.length - 1) {
                 campo += campos[i] + ", ";
@@ -202,34 +283,19 @@ public class OperationsJDBC {
             campo += campos[i] + " ";
         }
 
-        lineas = getStringConsulta(campos, lineas, rs);
+        lineas = getStringQuery(campos, lineas, rs);
         System.out.println(campo + "\n" + lineas);
         rs.close();
 
     }
 
-    //En el caso de ser una consulta un poco más complicada con cláusula where  o inner join.
-    public void select(String sql) throws SQLException {
-        if (sql.toUpperCase().contains("SELECT")) {
-            String lineas = "", campos = "";
-            ResultSet rs = sentencia.executeQuery(sql);
-            String[] metaData = new String[rs.getMetaData().getColumnCount()];
 
-            for (int i = 0; i < metaData.length; i++) {
-                metaData[i] = rs.getMetaData().getColumnName(i + 1);
-                campos += metaData[i] + " ";
-            }
-
-            lineas = getStringConsulta(metaData, lineas, rs);
-            System.out.println(campos + "\n" + lineas);
-            rs.close();
-
-        } else {
-            System.out.println("Operación SQL para consulta incorrecta");
-        }
-    }
-
-    //Select para hacer consultas llamando a funciones PS/SQL
+    /**
+     * Método para realizar consultas llamando a funciones PS/SQL
+     *
+     * @param sqlCall Nombre método PS/SQL
+     */
+    //TODO genérica
     public void selectFromCallableStatement(String sqlCall) throws SQLException {
         //sqlCall = "{ ? = call libro_ad.apellidos_cliente (?)}";
         CallableStatement cs = miConexion.prepareCall(sqlCall);

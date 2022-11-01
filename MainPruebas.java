@@ -19,7 +19,7 @@ public class MainPruebas {
            // campos = new String[]{"dni", "nombre", "tipoCamion "};
 //            jdbc.insertBatch("conductores", campos, datos);
             jdbc.select(innerJoin);
-
+            jdbc.selectAllColumns("camiones");
             //jdbc.select("SELECT ID FROM camiones");
         } catch (SQLException e) {
             throw new RuntimeException(e);
