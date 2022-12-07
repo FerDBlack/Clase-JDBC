@@ -35,6 +35,9 @@ public class OperationsJDBC {
 
     /**
      * <h2> CREATE </h2>
+     */
+    
+    /**
      * Método para crear la base de datos en el caso de que no existe en base al nombre indicado por parámetro.
      *
      * @param databaseName Nombre de la base de datos que se quiere crear.
